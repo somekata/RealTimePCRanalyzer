@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PCR Analyzer | Corrected/Raw/Relative/Δ</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Real-time PCR Analyzer</h1>
+    </header>
+
+    <main>
+      <!-- File Section -->
+      <section class="control-panel">
+        <label for="fileInput">CSVファイル：</label>
+        <input type="file" id="fileInput" accept=".csv" />
+        <div id="status"></div>
+      </section>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-target="tab-graphs">📈 Graphs</button>
+        <button class="tab" data-target="tab-table">📊 Data Table</button>
+        <button class="tab" data-target="tab-meta">🧪 Run Info</button>
+      </div>
+
+      <!-- Graph Section -->
+      <section id="tab-graphs" class="tab-content active">
+        <div id="chart-grid">
+          <div class="chart-box">
+            <h3>Corrected</h3>
+            <canvas id="chartCorrected"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>Baseline Subtracted (Δ)</h3>
+            <canvas id="chartDelta"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>Relative (1st=1)</h3>
+            <canvas id="chartRelative"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>Raw</h3>
+            <canvas id="chartRaw"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Table Section -->
+      <section id="tab-table" class="tab-content">
+        <h2>Data Table</h2>
+        <div id="tableContainer"></div>
+      </section>
+
+      <!-- Metadata Section -->
+      <section id="tab-meta" class="tab-content">
+        <h2>Run Information</h2>
+        <table id="metaTable"></table>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
