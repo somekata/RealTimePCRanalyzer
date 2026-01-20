@@ -82,3 +82,18 @@ td, th {
 }
 
 th { background: #e7edff; font-weight: bold; }
+
+/* 追加：ファイル周りのレイアウト */
+.file-row{
+    display:flex;
+    gap:.8rem;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:.6rem;
+}
+#fileSelect{
+    min-width: 280px;
+    padding:.4rem .5rem;
+    border-radius:.4rem;
+    border:1px solid #ccd;
+}

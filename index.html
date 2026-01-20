@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
@@ -9,13 +9,42 @@
   <body>
     <header>
       <h1>Real-time PCR Analyzer</h1>
+      <!-- ★ ここに入れる ★ -->
+      <div class="description">
+        <p>
+          このプログラムは
+          <strong>GeneSoc の raw data を可視化するためのツール</strong>です。
+        </p>
+      </div>
+      <!-- ★ ここまで ★ -->
     </header>
 
     <main>
       <!-- File Section -->
       <section class="control-panel">
-        <label for="fileInput">CSVファイル：</label>
-        <input type="file" id="fileInput" accept=".csv" />
+        <div class="file-row">
+          <label for="fileInput">CSVファイル（複数可）：</label>
+
+          <input type="file" id="fileInput" accept=".csv" multiple />
+        </div>
+        <div class="file-row">
+          <label for="fileSelect">表示するCSV：</label>
+          <select id="fileSelect" disabled>
+            <option value="">（未読み込み）</option>
+          </select>
+        </div>
+        <p>
+          「ファイルを選択」では、複数のファイルを一度に読み込むことができます。
+          CSV ファイルをドラッグ＆ドロップするか、
+          「ファイルを選択」をクリックしてファイルを指定してください。
+        </p>
+        <p>
+          <strong
+            >※
+            ファイルは1つずつではなく、まとめて一度にドロップしてください。</strong
+          >
+        </p>
+
         <div id="status"></div>
       </section>
 

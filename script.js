@@ -1,24 +1,88 @@
 let charts = [];
 
-// ----------- File Input Handler ----------
-document.getElementById("fileInput").addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// filename -> { parsed, dataset }
+const store = new Map();
 
-    document.getElementById("status").textContent = "読み込み中...";
+const fileInput = document.getElementById("fileInput");
+const fileSelect = document.getElementById("fileSelect");
+const statusEl = document.getElementById("status");
 
-    const text = await file.text();
-    const parsed = parseCSV(text);
+// ----------- File Input Handler (Multi) ----------
+fileInput.addEventListener("change", async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const dataset = compute(parsed);
+    statusEl.textContent = `読み込み中...（${files.length}件）`;
+    store.clear();
+
+    // まとめて読む
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        try {
+            const text = await file.text();
+            const parsed = parseCSV(text);
+
+            // 必須セクションが無いなどのケースは弾く（軽くガード）
+            if (!parsed.raw || !parsed.corrected) {
+                throw new Error("Raw Data / Corrected Data セクションが見つかりませんでした");
+            }
+
+            const dataset = compute(parsed);
+            store.set(file.name, { parsed, dataset });
+        } catch (err) {
+            console.error(err);
+            // 1つ壊れてても他は読ませる
+            statusEl.textContent = `⚠ 一部読み込み失敗: ${file.name}`;
+        }
+    }
+
+    if (store.size === 0) {
+        statusEl.textContent = "❌ 読み込みできるCSVがありませんでした";
+        fileSelect.disabled = true;
+        fileSelect.innerHTML = `<option value="">（未読み込み）</option>`;
+        return;
+    }
+
+    buildFileDropdown([...store.keys()]);
+    fileSelect.disabled = false;
+
+    // 先頭を表示
+    const first = store.keys().next().value;
+    fileSelect.value = first;
+    showByFilename(first);
+
+    statusEl.textContent = `✔ Completed（${store.size}件 読み込み）`;
+});
+
+// ----------- Dropdown Handler ----------
+fileSelect.addEventListener("change", () => {
+    const name = fileSelect.value;
+    if (!name) return;
+    showByFilename(name);
+});
+
+function buildFileDropdown(names) {
+    // 表示を安定させたいならソート
+    names.sort((a, b) => a.localeCompare(b, "ja"));
+
+    fileSelect.innerHTML = names
+        .map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`)
+        .join("");
+}
+
+function showByFilename(filename) {
+    const item = store.get(filename);
+    if (!item) return;
+
+    const { parsed, dataset } = item;
 
     drawAll(dataset);
     renderTable(dataset);
     renderMeta(parsed.meta);
 
-    document.getElementById("status").textContent = "✔ Completed";
-});
-
+    // 画面上に「今どれ表示してるか」軽く出す（邪魔なら消してOK）
+    statusEl.textContent = `表示中：${filename}`;
+}
 
 // ----------- CSV Parsing -----------
 
@@ -50,6 +114,8 @@ function parseSection(lines, name) {
         if (lines[i]) block.push(lines[i]);
     }
 
+    if (block.length === 0) return null;
+
     const cycles = block[0].split(",").slice(1).map(Number);
 
     return {
@@ -61,7 +127,6 @@ function parseSection(lines, name) {
     };
 }
 
-
 // ----------- Data Processing -----------
 
 function compute({ raw, corrected }) {
@@ -70,7 +135,6 @@ function compute({ raw, corrected }) {
 
     return { cycles: raw.cycles, corrected, raw, relative: rel, delta };
 }
-
 
 // ----------- Chart Drawing -----------
 
@@ -85,7 +149,6 @@ function drawAll(data) {
 }
 
 function draw(id, cycles, dataset) {
-
     const colors = {
         "R": "rgba(255,0,0,.9)",
         "G": "rgba(0,150,0,.9)",
@@ -116,7 +179,6 @@ function draw(id, cycles, dataset) {
     });
 }
 
-
 // ----------- Table Rendering -----------
 
 function renderTable({ cycles, corrected, raw }) {
@@ -125,26 +187,25 @@ function renderTable({ cycles, corrected, raw }) {
     let html = `<table><tr><th>Channel</th>${cycles.map(c => `<th>${c}</th>`).join("")}</tr>`;
 
     corrected.series.forEach(s => {
-        html += `<tr><td>${s.name} (Corrected)</td>${s.values.map(v => `<td>${v}</td>`).join("")}</tr>`;
+        html += `<tr><td>${escapeHtml(s.name)} (Corrected)</td>${s.values.map(v => `<td>${v}</td>`).join("")}</tr>`;
     });
 
     raw.series.forEach(s => {
-        html += `<tr><td>${s.name} (Raw)</td>${s.values.map(v => `<td>${v}</td>`).join("")}</tr>`;
+        html += `<tr><td>${escapeHtml(s.name)} (Raw)</td>${s.values.map(v => `<td>${v}</td>`).join("")}</tr>`;
     });
 
     html += "</table>";
     div.innerHTML = html;
 }
 
-
 // ----------- Meta Rendering -----------
 
 function renderMeta(meta) {
     const table = document.getElementById("metaTable");
     table.innerHTML = Object.entries(meta)
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+        .map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`)
+        .join("");
 }
-
 
 // ----------- Tab Switch -----------
 
@@ -157,3 +218,14 @@ document.querySelectorAll(".tab").forEach(btn => {
         document.getElementById(btn.dataset.target).classList.add("active");
     });
 });
+
+// ----------- small utilities -----------
+
+function escapeHtml(str) {
+    return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
